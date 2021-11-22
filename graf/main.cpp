@@ -7,6 +7,7 @@ class GRAF
 private:
     int n, m, s;
     vector<vector<int>> v, tr;
+    vector<vector<pair<int,int>>> c;
 
     void dfs(int poz, bool viz[]);
     void pcrit(int poz, int desc[], int low[], int tata[], list<pair<int,int>>& muc, vector<vector<int>>& ccon, int& nrconex);
@@ -16,7 +17,7 @@ private:
     void dfspc(int &poz, bool viz[], int desc[], int low[], int tata[]);
 
 public:
-    GRAF(int n);
+    GRAF();
     GRAF(bool orientat);
     void bfs();
     void conex();
@@ -24,13 +25,11 @@ public:
     void tc();
     void stp();
     void pc();
+    void apm();
+    void djk();
 };
 
-GRAF::GRAF(int n)
-{
-    this->n = n;
-    v.resize(n+1);
-}
+GRAF::GRAF(){}
 
 GRAF::GRAF(bool orientat)
 {
@@ -339,9 +338,121 @@ void hakim()
     }
 }
 
+void GRAF::apm()
+{
+    freopen("apm.in", "r", stdin);
+
+    scanf("%d %d", &n, &m);
+
+    int x, y, z;
+    c.resize(n+1);
+    for(int i=0; i<m; ++i)
+    {
+        scanf("%d %d %d", &x, &y, &z);
+        c[x].push_back(make_pair(y, z));
+        c[y].push_back(make_pair(x, z));
+    }
+    fclose(stdin);
+
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+    vector<int> k(n+1, INT_MAX);
+    vector<int> tata(n+1, -1);
+    vector<bool> viz(n+1, false);
+
+    pq.push(make_pair(0,1));
+    k[1] = 0;
+
+    while(pq.empty() == false)
+    {
+        int poz = pq.top().second;
+        pq.pop();
+
+        if(viz[poz] == true)
+        {
+            continue;
+        }
+        viz[poz] = true;
+
+        for(auto i : c[poz])
+        {
+            if(viz[i.first] == false && k[i.first] > i.second)
+            {
+                k[i.first] = i.second;
+                pq.push(make_pair(k[i.first], i.first));
+                tata[i.first] = poz;
+            }
+        }
+    }
+
+    int ctot = 0;
+    for(int i=1; i<=n; ++i)
+        ctot += k[i];
+    freopen("apm.out", "w", stdout);
+    printf("%d %d\n", ctot, n-1);
+    for(int i=2; i<=n; ++i)
+        printf("%d %d\n", tata[i], i);
+    fclose(stdout);
+}
+
+void GRAF::djk()
+{
+    freopen("dijkstra.in", "r", stdin);
+
+    scanf("%d %d", &n, &m);
+
+    int x, y, z;
+    c.resize(n+1);
+    for(int i=0; i<m; ++i)
+    {
+        scanf("%d %d %d", &x, &y, &z);
+        c[x].push_back(make_pair(y, z));
+    }
+    fclose(stdin);
+
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+    vector<int> k(n+1, INT_MAX);
+    vector<bool> viz(n+1, false);
+
+    pq.push(make_pair(0,1));
+    k[1] = 0;
+
+    while(pq.empty() == false)
+    {
+        int poz = pq.top().second;
+        pq.pop();
+
+        if(viz[poz] == true)
+        {
+            continue;
+        }
+        viz[poz] = true;
+
+        for(auto i : c[poz])
+        {
+            if(k[poz] + i.second < k[i.first])
+            {
+                k[i.first] = k[poz] + i.second;
+                pq.push(make_pair(k[i.first], i.first));
+            }
+        }
+    }
+
+    freopen("dijkstra.out", "w", stdout);
+    for(int i=2; i<=n; ++i)
+    {
+        if(k[i] != INT_MAX)
+            printf("%d ", k[i]);
+        else
+            printf("%d ", 0);
+    }
+
+    fclose(stdout);
+
+}
+
 int main()
 {
-    GRAF g(true);
-    g.pc();
+    GRAF g;
+    g.djk();
     return 0;
 }
