@@ -13,12 +13,12 @@ private:
     void pcrit(int poz, int desc[], int low[], int tata[], list<pair<int,int>>& muc, vector<vector<int>>& ccon, int& nrconex);
     void dfstc(int &poz, bool viz[], vector<vector<int>> &ctc, int &nrcomp);
     void fillst(int &poz, bool viz[], stack<int> &st);
-    GRAF trans();
     void dfspc(int &poz, bool viz[], int desc[], int low[], int tata[]);
+    pair<int, int> parcdarb(int poz);
 
 public:
     GRAF();
-    GRAF(bool orientat);
+    GRAF(bool orientat, bool cost, bool arbore);
     void bfs();
     void conex();
     void bc();
@@ -27,36 +27,55 @@ public:
     void pc();
     void apm();
     void djk();
+    int darb();
+    int fm();
 };
 
 GRAF::GRAF(){}
 
-GRAF::GRAF(bool orientat)
+GRAF::GRAF(bool orientat, bool cost, bool arbore)
 {
     //freopen("bfs.in", "r", stdin);
     //freopen("biconex.in", "r", stdin);
     //freopen("dfs.in", "r", stdin);
     //freopen("ctc.in", "r", stdin);
     //freopen("sortaret.in", "r", stdin);
-    freopen("punctecrit.in", "r", stdin);
+    //freopen("punctecrit.in", "r", stdin);
 
-    //scanf("%d %d %d", &n, &m, &s);
-    scanf("%d %d", &n, &m);
+    if(arbore == false)
+        scanf("%d %d", &n, &m);
+    else
+    {
+        scanf("%d", &n);
+        m = n-1;
+    }
 
-    int x, y;
+    int x, y, z;
     v.resize(n+1);
     tr.resize(n+1);
+    c.resize(n+1);
     for(int i=0; i<m; ++i)
     {
-        scanf("%d %d", &x, &y);
-        v[x].push_back(y);
-        tr[y].push_back(x);
-        if(!orientat)
+        if(cost == true)
         {
-            v[y].push_back(x);
-            tr[x].push_back(y);
-        }
+            scanf("%d %d %d", &x, &y, &z);
+            c[x].push_back(make_pair(y, z));
 
+            if(!orientat)
+                c[y].push_back(make_pair(x, z));
+        }
+        else
+        {
+            scanf("%d %d", &x, &y);
+            v[x].push_back(y);
+            tr[y].push_back(x);
+
+            if(!orientat)
+            {
+                v[y].push_back(x);
+                tr[x].push_back(y);
+            }
+        }
     }
     fclose(stdin);
 }
@@ -195,15 +214,6 @@ void GRAF::fillst(int &poz, bool viz[], stack<int> &st)
 
 
     st.push(poz);
-}
-
-GRAF GRAF::trans()
-{
-    GRAF gt(n);
-    for(int i=1; i<=n; ++i)
-        for(auto j : v[i])
-            gt.v[j].push_back(i);
-    return gt;
 }
 
 void GRAF::tc()
@@ -450,9 +460,109 @@ void GRAF::djk()
 
 }
 
+void rf(int n, int m[101][101])
+{
+    for(int i=1; i<=n; ++i)
+        for(int j=1; j<=n; ++j)
+            for(int k=1; k<=n; ++k)
+                if(m[j][i] + m[i][k] < m[j][k])
+                    m[j][k] = m[j][i] + m[i][k];
+    return;
+}
+
+void rf_infoarena()
+{
+    freopen("royfloyd.in", "r", stdin);
+    int n, m[101][101];
+    scanf("%d", &n);
+    for(int i=1; i<=n; ++i)
+        for(int j=1; j<=n; ++j)
+        {
+            scanf("%d", &m[i][j]);
+            if(m[i][j] == 0)
+                m[i][j] = 1001;
+        }
+
+
+    fclose(stdin);
+    rf(n, m);
+    freopen("royfloyd.out", "w", stdout);
+    for(int i=1; i<=n; ++i)
+    {
+         for(int j=1; j<=n; ++j)
+         {
+             if(i == j)
+                printf("0 ");
+             else
+                printf("%d ", m[i][j]);
+         }
+
+        printf("\n");
+    }
+    fclose(stdout);
+}
+
+pair<int, int> GRAF::parcdarb(int poz)
+{
+    int d[n+1];
+    fill_n(d, n+1, -1);
+    d[poz] = 1;
+
+    queue<int> q;
+    q.push(poz);
+
+    int last;
+
+    while(q.empty() == false)
+    {
+        poz = q.front();
+        q.pop();
+        for(auto i : v[poz])
+        {
+            if(d[i] == -1)
+            {
+                q.push(i);
+                d[i]=d[poz]+1;
+                last = i;
+            }
+        }
+    }
+    return {last, d[last]};
+}
+
+int GRAF::darb()
+{
+    pair<int, int> rez;
+    rez = parcdarb(1);
+    rez = parcdarb(rez.first);
+    return rez.second;
+}
+
+void darb_infoarena()
+{
+    freopen("darb.in", "r", stdin);
+    GRAF g(false, false, true);
+    freopen("darb.out", "w", stdout);
+    printf("%d", g.darb());
+    fclose(stdout);
+}
+
+int GRAF::fm()
+{
+
+}
+
+void fm_infoarena()
+{
+    freopen("maxflow.in", "r", stdin);
+    GRAF g(true, true, false);
+    g.fm();
+
+}
+
 int main()
 {
-    GRAF g;
-    g.djk();
+    ios_base::sync_with_stdio(false);
+    darb_infoarena();
     return 0;
 }
