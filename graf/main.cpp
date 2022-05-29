@@ -9,45 +9,47 @@ private:
     vector<vector<int>> v, tr;
     vector<vector<pair<int,int>>> c;
 
-    void dfs(int poz, bool viz[]);
+    void dfs_conex(int poz, bool viz[]);
     void pcrit(int poz, int desc[], int low[], int tata[], list<pair<int,int>>& muc, vector<vector<int>>& ccon, int& nrconex);
-    void dfstc(int &poz, bool viz[], vector<vector<int>> &ctc, int &nrcomp);
+    void dfs_ctc(int &poz, bool viz[], vector<vector<int>> &ctc, int &nrcomp);
     void fillst(int &poz, bool viz[], stack<int> &st);
-    void dfspc(int &poz, bool viz[], int desc[], int low[], int tata[]);
+    void dfs_pc(int &poz, bool viz[], int desc[], int low[], int tata[], vector<vector<int>>& sol_pc);
     pair<int, int> parcdarb(int poz);
 
 public:
     GRAF();
-    GRAF(bool orientat, bool cost, bool arbore);
-    void bfs();
-    void conex();
-    void bc();
-    void tc();
-    void stp();
-    void pc();
-    void apm();
-    void djk();
+    GRAF(bool orientat, bool cost, bool arbore, bool start);
+    int getN();
+    void bfs(int* d);
+    int conex();
+    vector<vector<int>> bc(int &nrconex);
+    vector<vector<int>> ctc(int &nrcomp);
+    stack<int> stp();
+    vector<vector<int>> pc();
+    vector<int> apm(int &cst, int &nrmuc);
+    vector<int> djk();
     int darb();
     int fm();
+    vector<int> bellmanford();
 };
 
 GRAF::GRAF(){}
 
-GRAF::GRAF(bool orientat, bool cost, bool arbore)
+GRAF::GRAF(bool orientat, bool cost, bool arbore, bool start)
 {
-    //freopen("bfs.in", "r", stdin);
-    //freopen("biconex.in", "r", stdin);
-    //freopen("dfs.in", "r", stdin);
-    //freopen("ctc.in", "r", stdin);
-    //freopen("sortaret.in", "r", stdin);
-    //freopen("punctecrit.in", "r", stdin);
-
-    if(arbore == false)
-        scanf("%d %d", &n, &m);
+    if(start == true)
+    {
+        scanf("%d %d %d", &n, &m, &s);
+    }
     else
     {
-        scanf("%d", &n);
-        m = n-1;
+        if(arbore == false)
+        scanf("%d %d", &n, &m);
+        else
+        {
+            scanf("%d", &n);
+            m = n-1;
+        }
     }
 
     int x, y, z;
@@ -80,9 +82,13 @@ GRAF::GRAF(bool orientat, bool cost, bool arbore)
     fclose(stdin);
 }
 
-void GRAF::bfs()
+int GRAF::getN()
 {
-    int d[n+1];
+    return this->n;
+}
+
+void GRAF::bfs(int* d)
+{
     fill_n(d, n+1, -1);
     d[s] = 0;
     queue<int> q;
@@ -100,23 +106,32 @@ void GRAF::bfs()
         }
         q.pop();
     }
+}
+
+void bfs_infoarena()
+{
+    freopen("bfs.in", "r", stdin);
+    GRAF g(true, false, false, true);
+    int n = g.getN();
+    int rezultat_bfs[n];
+    g.bfs(rezultat_bfs);
     freopen("bfs.out", "w", stdout);
     for(int i=1; i<=n; ++i)
-        printf("%d ", d[i]);
+        printf("%d ", rezultat_bfs[i]);
     fclose(stdout);
 }
 
-void GRAF::dfs(int poz, bool viz[])
+void GRAF::dfs_conex(int poz, bool viz[])
 {
     viz[poz] = true;
     for(auto i : v[poz])
     {
         if(!viz[i])
-            dfs(i, viz);
+            dfs_conex(i, viz);
     }
 }
 
-void GRAF::conex()
+int GRAF::conex()
 {
     bool viz[n+1] = {false};
     int nrconex = 0;
@@ -125,10 +140,20 @@ void GRAF::conex()
     {
         if(!viz[i])
         {
-            dfs(i, viz);
+            dfs_conex(i, viz);
             nrconex++;
         }
     }
+    return nrconex;
+}
+
+void dfs_infoarena()
+{
+    freopen("dfs.in", "r", stdin);
+    GRAF g(false, false, false, false);
+    int nrconex;
+    nrconex = g.conex();
+    return;
     freopen("dfs.out", "w", stdout);
     printf("%d", nrconex);
     fclose(stdout);
@@ -168,12 +193,12 @@ void GRAF::pcrit(int poz, int desc[], int low[], int tata[], list<pair<int,int>>
     }
 }
 
-void GRAF::bc()
+vector<vector<int>> GRAF::bc(int &nrconex)
 {
     int *desc = new int[n+1], *low = new int[n+1], *tata = new int[n+1];
     list<pair<int,int>>muc;
     vector<vector<int>> ccon(n);
-    int nrconex = 0;
+    nrconex = 0;
     fill_n(desc, n+1, -1);
     fill_n(low, n+1, -1);
     fill_n(tata, n+1, -1);
@@ -183,7 +208,15 @@ void GRAF::bc()
         if(desc[i] == -1)
             pcrit(i, desc, low, tata, muc, ccon, nrconex);
     }
+    return ccon;
+}
 
+void bc_infoarena()
+{
+    freopen("biconex.in", "r", stdin);
+    GRAF g(false, false, false, false);
+    int nrconex;
+    vector<vector<int>> ccon = g.bc(nrconex);
     freopen("biconex.out", "w", stdout);
     printf("%d\n", nrconex);
     for(int i=0; i<nrconex; ++i)
@@ -195,14 +228,14 @@ void GRAF::bc()
     fclose(stdout);
 }
 
-void GRAF::dfstc(int &poz, bool viz[], vector<vector<int>> &ctc, int &nrcomp)
+void GRAF::dfs_ctc(int &poz, bool viz[], vector<vector<int>> &ctc, int &nrcomp)
 {
     ctc[nrcomp].push_back(poz);
     viz[poz] = true;
     //cout<<poz<<" ";
     for(auto i : tr[poz])
         if(viz[i] == false)
-            dfstc(i, viz, ctc, nrcomp);
+            dfs_ctc(i, viz, ctc, nrcomp);
 }
 
 void GRAF::fillst(int &poz, bool viz[], stack<int> &st)
@@ -216,9 +249,9 @@ void GRAF::fillst(int &poz, bool viz[], stack<int> &st)
     st.push(poz);
 }
 
-void GRAF::tc()
+vector<vector<int>> GRAF::ctc(int &nrcomp)
 {
-    int nrcomp = 0;
+    nrcomp = 0;
     vector<vector<int>> ctc(n+1);
     stack<int> st;
     bool viz[n+1] = {false};
@@ -234,30 +267,46 @@ void GRAF::tc()
         if(viz[st.top()] == false)
         {
             nrcomp++;
-            dfstc(st.top(), viz, ctc, nrcomp);
+            dfs_ctc(st.top(), viz, ctc, nrcomp);
             //cout<<"\n";
         }
         st.pop();
     }
+    return ctc;
+}
+
+void ctc_infoarena()
+{
+    freopen("ctc.in", "r", stdin);
+    GRAF g(true, false, false, false);
+    int nrcomp;
+    vector<vector<int>> comp = g.ctc(nrcomp);
     freopen("ctc.out", "w", stdout);
     printf("%d\n", nrcomp);
     for(int i=1; i<=nrcomp; ++i)
     {
-        for(auto j : ctc[i])
+        for(auto j : comp[i])
             printf("%d ", j);
         printf("\n");
     }
     fclose(stdout);
 }
 
-void GRAF::stp()
+stack<int> GRAF::stp()
 {
     stack<int> st;
     bool viz[n+1] = {false};
     for(int i=1; i<=n; ++i)
         if(!viz[i])
             fillst(i, viz, st);
+    return st;
+}
 
+void stp_infoarena()
+{
+    freopen("sortaret.in", "r", stdin);
+    GRAF g(true, false, false, false);
+    stack<int> st = g.stp();
     freopen("sortaret.out", "w", stdout);
     while(st.empty() == false)
     {
@@ -267,7 +316,7 @@ void GRAF::stp()
     fclose(stdout);
 }
 
-void GRAF::dfspc(int &poz, bool viz[], int desc[], int low[], int tata[])
+void GRAF::dfs_pc(int &poz, bool viz[], int desc[], int low[], int tata[], vector<vector<int>>& sol_pc)
 {
     static int time = 0;
     viz[poz] = true;
@@ -278,34 +327,79 @@ void GRAF::dfspc(int &poz, bool viz[], int desc[], int low[], int tata[])
         if(viz[i] == false)
         {
             tata[i] = poz;
-            dfspc(i, viz, desc, low, tata);
+            dfs_pc(i, viz, desc, low, tata, sol_pc);
             low[poz] = min(low[poz], low[i]);
             if(low[i] > desc[poz])
-                printf("%d %d\n", poz, i);
+            {
+                vector<int> con;
+                con.push_back(poz);
+                con.push_back(i);
+                sol_pc.push_back(con);
+            }
         }
         else if(i != tata[poz])
             low[poz] = min(low[poz], desc[i]);
     }
 }
 
-void GRAF::pc()
+vector<vector<int>> GRAF::pc()
 {
     int desc[n+1] = {0};
     int low[n+1];
     bool viz[n+1] = {false};
     int tata[n+1];
     fill_n(tata, n+1, -1);
-
-    freopen("punctecrit.out", "w", stdout);
+    vector<vector<int>> sol_pc;
 
     for(int i=0; i<n; ++i)
         if(viz[i] == false)
-            dfspc(i, viz, desc, low, tata);
+            dfs_pc(i, viz, desc, low, tata, sol_pc);
+    return sol_pc;
+}
 
+void pc_afisare()
+{
+    freopen("punctecrit.in", "r", stdin);
+    GRAF g(false, false, false, false);
+
+    vector<vector<int>> sol_pc = g.pc();
+
+    freopen("punctecrit.out", "w", stdout);
+    for(auto i : sol_pc)
+        printf("%d %d\n", i[0], i[1]);
     fclose(stdout);
 }
 
-void hakim()
+bool havel_hakimi(vector<int> sir)
+{
+    while(1)
+    {
+        sort(sir.begin(), sir.end(), greater<>());
+        if(sir[0] == 0)
+        {
+            return true;
+        }
+
+        int first = sir[0];
+        sir.erase(sir.begin()+0);
+
+        if(first > sir.size())
+        {
+            return false;
+        }
+
+        for(int i=0; i<first; ++i)
+        {
+            sir[i]--;
+            if(sir[i] < 0)
+            {
+              return false;
+            }
+        }
+    }
+}
+
+void havel_hakimi_afisare()
 {
     freopen("hakim.in", "r", stdin);
     int nr, x;
@@ -318,54 +412,16 @@ void hakim()
     }
     fclose(stdin);
 
-    while(1)
-    {
-        sort(sir.begin(), sir.end(), greater<>());
-        if(sir[0] == 0)
-        {
-            cout<<"Yes";
-            return;
-        }
-
-        int first = sir[0];
-        sir.erase(sir.begin()+0);
-
-        if(first > sir.size())
-        {
-            cout<<"No";
-            return;
-        }
-
-        for(int i=0; i<first; ++i)
-        {
-            sir[i]--;
-            if(sir[i] < 0)
-            {
-              cout<<"No";
-              return;
-            }
-        }
-    }
+    if(havel_hakimi(sir))
+        cout<<"Este graf simplu";
+    else
+        cout<<"Nu este graf simplu";
 }
 
-void GRAF::apm()
+vector<int> GRAF::apm(int &cst, int &nrmuc)
 {
-    freopen("apm.in", "r", stdin);
-
-    scanf("%d %d", &n, &m);
-
-    int x, y, z;
-    c.resize(n+1);
-    for(int i=0; i<m; ++i)
-    {
-        scanf("%d %d %d", &x, &y, &z);
-        c[x].push_back(make_pair(y, z));
-        c[y].push_back(make_pair(x, z));
-    }
-    fclose(stdin);
-
     priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
-    vector<int> k(n+1, INT_MAX);
+    vector<int> k(n+1, INT_MAX); //costuri minime
     vector<int> tata(n+1, -1);
     vector<bool> viz(n+1, false);
 
@@ -394,31 +450,29 @@ void GRAF::apm()
         }
     }
 
-    int ctot = 0;
+    cst = 0, nrmuc = n-1;
     for(int i=1; i<=n; ++i)
-        ctot += k[i];
+        cst += k[i];
+
+    return tata;
+}
+
+void apm_infoarena()
+{
+    freopen("apm.in", "r", stdin);
+    GRAF g(false, true, false, false);
+    int cst, nrmuc;
+    vector<int> tata = g.apm(cst, nrmuc);
+
     freopen("apm.out", "w", stdout);
-    printf("%d %d\n", ctot, n-1);
-    for(int i=2; i<=n; ++i)
+    printf("%d\n%d\n", cst, nrmuc);
+    for(int i=2; i<=nrmuc+1; ++i)
         printf("%d %d\n", tata[i], i);
     fclose(stdout);
 }
 
-void GRAF::djk()
+vector<int> GRAF::djk()
 {
-    freopen("dijkstra.in", "r", stdin);
-
-    scanf("%d %d", &n, &m);
-
-    int x, y, z;
-    c.resize(n+1);
-    for(int i=0; i<m; ++i)
-    {
-        scanf("%d %d %d", &x, &y, &z);
-        c[x].push_back(make_pair(y, z));
-    }
-    fclose(stdin);
-
     priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
     vector<int> k(n+1, INT_MAX);
     vector<bool> viz(n+1, false);
@@ -446,6 +500,15 @@ void GRAF::djk()
             }
         }
     }
+    return k;
+}
+
+void djk_infoarena()
+{
+    freopen("dijkstra.in", "r", stdin);
+    GRAF g(true, true, false, false);
+    int n = g.getN();
+    vector<int> k = g.djk();
 
     freopen("dijkstra.out", "w", stdout);
     for(int i=2; i<=n; ++i)
@@ -455,9 +518,7 @@ void GRAF::djk()
         else
             printf("%d ", 0);
     }
-
     fclose(stdout);
-
 }
 
 void rf(int n, int m[101][101])
@@ -541,28 +602,175 @@ int GRAF::darb()
 void darb_infoarena()
 {
     freopen("darb.in", "r", stdin);
-    GRAF g(false, false, true);
+    GRAF g(false, false, true, false);
     freopen("darb.out", "w", stdout);
     printf("%d", g.darb());
     fclose(stdout);
 }
 
-int GRAF::fm()
+vector<int> GRAF::bellmanford()
 {
+    queue<int> q;
+    vector<int> k(n+1, INT_MAX);
+    vector<bool> inq(n+1, false);
+    vector<int> negativ(n+1, 0);
 
+    q.push(1);
+    k[1] = 0;
+
+    while(q.empty() == false)
+    {
+        int poz = q.front();
+        q.pop();
+        inq[poz] = false;
+
+        for(auto i : c[poz])
+        {
+            if(k[poz] + i.second < k[i.first])
+            {
+                k[i.first] = k[poz] + i.second;
+                negativ[i.first]++;
+
+                if(negativ[i.first] == n)
+                {
+                    vector<int> ciclu_negativ;
+                    ciclu_negativ.push_back(2000);
+                    return ciclu_negativ;
+                }
+
+                if(inq[i.first] == false)
+                {
+                    q.push(i.first);
+                    inq[i.first] = true;
+                }
+            }
+        }
+    }
+    return k;
 }
 
-void fm_infoarena()
+void bellmanford_infoarena()
 {
-    freopen("maxflow.in", "r", stdin);
-    GRAF g(true, true, false);
-    g.fm();
+    freopen("bellmanford.in", "r", stdin);
+    GRAF g(true, true, false, false);
+    int n = g.getN();
+    vector<int> k = g.bellmanford();
 
+    freopen("bellmanford.out", "w", stdout);
+    if(k[0] == 2000)
+    {
+        printf("%s", "Ciclu negativ!");
+    }
+    else
+    {
+        for(int i=2; i<=n; ++i)
+        {
+            if(k[i] != INT_MAX)
+                printf("%d ", k[i]);
+            else
+                printf("%d ", 0);
+        }
+    }
+    fclose(stdout);
+}
+
+class Disjoint
+{
+    private:
+        int* tata;
+        int* h;
+        int n;
+
+        int radacina(int x);
+
+    public:
+        Disjoint(int n)
+        {
+            this->n = n;
+            h = new int[n];
+            tata = new int[n];
+            for(int i=0; i<n; ++i)
+            {
+                tata[i]=i;
+            }
+        }
+
+        void reuniune(int x, int y);
+        bool frati(int x, int y);
+};
+
+int Disjoint::radacina(int x)
+{
+    if(tata[x] != x)
+        tata[x] = radacina(tata[x]);
+    return tata[x];
+}
+
+void Disjoint::reuniune(int x, int y)
+{
+    int rad_x = radacina(x);
+    int rad_y = radacina(y);
+
+    if(rad_x == rad_y)
+        return;
+
+    if(h[rad_x] < h[rad_y])
+    {
+        tata[rad_x] = rad_y;
+    }
+    else if(h[rad_x] > h[rad_y])
+    {
+        tata[rad_y] = rad_x;
+    }
+    else
+    {
+        tata[rad_x] = rad_y;
+        h[rad_y]++;
+    }
+}
+
+bool Disjoint::frati(int x, int y)
+{
+    if(radacina(x) == radacina(y))
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+void disjoint_infoarena()
+{
+    freopen("disjoint.in", "r", stdin);
+    freopen("disjoint.out", "w", stdout);
+    int n, m;
+    scanf("%d %d", &n, &m);
+    Disjoint d(n);
+
+    for(int i=0; i<m; ++i)
+    {
+        int cod, x, y;
+        scanf("%d %d %d", &cod, &x, &y);
+        if(cod == 1)
+        {
+            d.reuniune(x, y);
+        }
+        else
+        {
+            if(d.frati(x, y))
+                printf("%s", "DA\n");
+            else
+                printf("%s", "NU\n");
+        }
+    }
+    fclose(stdin);
+    fclose(stdout);
 }
 
 int main()
 {
-    ios_base::sync_with_stdio(false);
-    darb_infoarena();
+    disjoint_infoarena();
     return 0;
 }
